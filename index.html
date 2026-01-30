@@ -201,18 +201,25 @@
                 .filter(line => {
                     const trimmed = line.trim();
                     if (/^#{1,2}\s/.test(trimmed)) return false;
-                    if (/^\*\*Student[:：]\*\*/i.test(trimmed)) return false;
+                    if (/^\*\*(Student|Author)[:：]\*\*/i.test(trimmed)) return false;
+                    if (/^Student[:：]/i.test(trimmed)) return false;
                     if (/^\*\*Date[:：]\*\*/i.test(trimmed)) return false;
+                    if (/^Date[:：]/i.test(trimmed)) return false;
                     return true;
                 })
                 .join('\n')
                 .trim();
         }
 
-        // Extract author name: prefer **Student:** line from body, fall back to filename
+        // Extract author name from various formats students used
         function extractAuthor(filename, body) {
-            const match = body.match(/\*\*Student[:：]\*\*\s*(.+)/i);
-            if (match) return match[1].trim();
+            // **Student:** Name or **Author:** Name
+            const bold = body.match(/\*\*(Student|Author)[:：]\*\*\s*(.+)/i);
+            if (bold) return bold[2].trim();
+            // Student: Name (no bold)
+            const plain = body.match(/^Student[:：]\s*(.+)/im);
+            if (plain) return plain[1].trim();
+            // Fall back to filename
             return filename
                 .replace('.md', '')
                 .replace(/[-_]/g, ' ')
@@ -261,7 +268,7 @@
                 const files = await res.json();
                 const mdFiles = files.filter(f => f.name.endsWith('.md') && f.name !== '.gitkeep');
 
-                const questions = await Promise.all(
+                const fetched = await Promise.all(
                     mdFiles.map(async (f) => {
                         const r = await fetch(f.download_url);
                         const text = await r.text();
@@ -271,6 +278,8 @@
                         };
                     })
                 );
+                // Filter out empty submissions
+                const questions = fetched.filter(q => q.body.trim().length > 0);
 
                 allQuestions = questions;
                 remaining = [...questions];
