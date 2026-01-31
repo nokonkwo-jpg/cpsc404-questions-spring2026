@@ -15,10 +15,12 @@
         <select id="weekSelect" disabled>
             <option value="">Loading weeks…</option>
         </select>
-        <button id="backBtn" disabled>← Back</button>
-        <button id="pickBtn" disabled>Pick a Question</button>
-        <button id="forwardBtn" disabled>Forward →</button>
-        <button id="resetBtn" disabled>Reset Pool</button>
+        <div class="nav-row">
+            <button id="backBtn" disabled>← Back</button>
+            <button id="pickBtn" disabled>Pick a Question</button>
+            <button id="forwardBtn" disabled>Forward →</button>
+            <button id="resetBtn" disabled>Reset Pool</button>
+        </div>
         <span class="status" id="status"></span>
         <div class="keyboard-hint">Space / → = next &nbsp;·&nbsp; ← = back &nbsp;·&nbsp; R = reset</div>
     </div>
@@ -188,6 +190,20 @@
                 resetQuestionPool();
             }
         });
+
+        // Swipe gestures on the question card
+        let touchStartX = null;
+        card.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        card.addEventListener('touchend', (e) => {
+            if (touchStartX === null) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            touchStartX = null;
+            if (Math.abs(dx) < 50) return; // ignore small swipes
+            if (dx > 0 && !backBtn.disabled) goBack();
+            else if (dx < 0 && !pickBtn.disabled) pickRandom();
+        }, { passive: true });
 
         loadWeeks();
     </script>
